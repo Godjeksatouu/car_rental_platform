@@ -6,9 +6,7 @@ export const Login: React.FC = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
-    userType: 'agency' as 'agency' | 'client',
-    agencySlug: ''
+    password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
