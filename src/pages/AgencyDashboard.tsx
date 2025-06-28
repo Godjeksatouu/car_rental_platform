@@ -9,6 +9,7 @@ import { CarsManagement } from '../components/CarsManagement';
 import { AgencyProfile } from '../components/AgencyProfile';
 import { BrandSettings } from '../components/BrandSettings';
 import { ReservationsManagement } from '../components/ReservationsManagement';
+import { CarAvailabilityCalendar } from '../components/CarAvailabilityCalendar';
 
 export const AgencyDashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -45,6 +46,7 @@ export const AgencyDashboard: React.FC = () => {
       items: [
         { id: 'dashboard', label: 'Dashboard', icon: Home, description: 'Overview of activity' },
         { id: 'cars', label: 'Cars', icon: Car, description: 'List of cars, add/edit/remove' },
+        { id: 'availability', label: 'Availability Calendar', icon: Calendar, description: 'View car availability by date' },
         { id: 'categories', label: 'Categories', icon: Tag, description: 'Manage car categories' },
         { id: 'reservations', label: 'Reservations', icon: Calendar, description: 'View and manage client reservations' },
         { id: 'rentals', label: 'Rentals', icon: BarChart3, description: 'Active and past rental records' },
@@ -76,6 +78,8 @@ export const AgencyDashboard: React.FC = () => {
         return renderDashboardContent();
       case 'cars':
         return <CarsManagement />;
+      case 'availability':
+        return <CarAvailabilityCalendar />;
       case 'categories':
         return <div className="p-6"><h2 className="text-2xl font-bold">Car Categories</h2><p className="text-gray-600">Organize your cars into categories.</p></div>;
       case 'reservations':

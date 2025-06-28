@@ -31,8 +31,7 @@ export const Login: React.FC = () => {
       const loginData = {
         email: formData.email,
         password: formData.password,
-        user_type: formData.userType,
-        ...(formData.userType === 'client' && { agency_slug: formData.agencySlug })
+        user_type: 'agency'
       };
 
       const response = await fetch('http://localhost:3001/api/v1/auth/login', {
@@ -51,12 +50,8 @@ export const Login: React.FC = () => {
         localStorage.setItem('refresh_token', data.refresh_token);
         localStorage.setItem('user', JSON.stringify(data.user));
 
-        // Redirect based on user type
-        if (formData.userType === 'agency') {
-          navigate('/dashboard');
-        } else {
-          navigate(`/site/${data.user.agency_id}`);
-        }
+        // Redirect to agency dashboard
+        navigate('/dashboard');
       } else {
         setError(data.error?.message || 'Login failed');
       }
@@ -99,44 +94,7 @@ export const Login: React.FC = () => {
               </div>
             )}
 
-            {/* User Type Selection */}
-            <div>
-              <label htmlFor="userType" className="block text-sm font-medium text-gray-700 mb-2">
-                I am a
-              </label>
-              <select
-                id="userType"
-                name="userType"
-                value={formData.userType}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="agency">Business Owner (Agency)</option>
-                <option value="client">Customer (Client)</option>
-              </select>
-            </div>
 
-            {/* Agency Slug for Clients */}
-            {formData.userType === 'client' && (
-              <div>
-                <label htmlFor="agencySlug" className="block text-sm font-medium text-gray-700 mb-2">
-                  Agency Code
-                </label>
-                <input
-                  id="agencySlug"
-                  name="agencySlug"
-                  type="text"
-                  required
-                  value={formData.agencySlug}
-                  onChange={handleInputChange}
-                  placeholder="Enter your agency's code"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Ask your car rental agency for their unique code
-                </p>
-              </div>
-            )}
 
             {/* Email */}
             <div>
@@ -151,7 +109,7 @@ export const Login: React.FC = () => {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="Enter your email"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               />
             </div>
 
@@ -169,7 +127,7 @@ export const Login: React.FC = () => {
                   value={formData.password}
                   onChange={handleInputChange}
                   placeholder="Enter your password"
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 />
                 <button
                   type="button"
@@ -210,11 +168,9 @@ export const Login: React.FC = () => {
                 Sign up for free
               </Link>
             </p>
-            {formData.userType === 'agency' && (
-              <p className="text-xs text-gray-500">
-                For business owners who want to manage their car rental agency
-              </p>
-            )}
+            <p className="text-xs text-gray-500">
+              For business owners who want to manage their car rental agency
+            </p>
           </div>
         </form>
       </div>
