@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Save, Edit, MapPin, Phone, Mail, Globe, Calendar, User } from 'lucide-react';
 
 interface AgencyProfileData {
@@ -30,22 +30,23 @@ interface AgencyProfileData {
 export const AgencyProfile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
+  const [isLoading, setIsLoading] = useState(true);
+
   const [profileData, setProfileData] = useState<AgencyProfileData>({
-    name: 'CALABRIA LUXURY CAR',
-    email: 'calabrialuxurycar@gmail.com',
-    phone: '06 61 555 765',
-    address: 'Magasin N°04, Al Khouzama 3 Lissasfa',
-    city: 'Casablanca',
-    state: 'Casablanca-Settat',
-    country: 'Morocco',
-    postalCode: '20000',
-    website: 'www.calabrialuxurycar.com',
-    description: 'Premium car rental service offering luxury vehicles for all your transportation needs.',
-    contactPerson: 'Mohamed Elamin Satou',
-    businessRegistration: 'RC-123456789',
-    taxId: 'IF-987654321',
-    establishedDate: '2020-01-15',
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    country: '',
+    postalCode: '',
+    website: '',
+    description: '',
+    contactPerson: '',
+    businessRegistration: '',
+    taxId: '',
+    establishedDate: '',
     operatingHours: {
       monday: { open: '08:00', close: '18:00', closed: false },
       tuesday: { open: '08:00', close: '18:00', closed: false },
@@ -59,16 +60,166 @@ export const AgencyProfile: React.FC = () => {
 
   const [editData, setEditData] = useState<AgencyProfileData>(profileData);
 
+  // Fetch agency profile data on component mount
+  useEffect(() => {
+    const fetchAgencyProfile = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        if (!token) {
+          console.error('No access token found');
+          setIsLoading(false);
+          return;
+        }
+
+        // First, try to get the agency profile
+        const response = await fetch('http://localhost:3001/api/v1/agencies/profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const agencyData = data.agency || data;
+
+          // Map the backend data to our frontend structure
+          const mappedData: AgencyProfileData = {
+            name: agencyData.name || user.name || '',
+            email: agencyData.email || user.email || '',
+            phone: agencyData.phone || '',
+            address: agencyData.address || '',
+            city: agencyData.city || '',
+            state: agencyData.state || '',
+            country: agencyData.country || '',
+            postalCode: agencyData.postal_code || '',
+            website: agencyData.website || '',
+            description: agencyData.description || '',
+            contactPerson: user.name || agencyData.contact_person || '',
+            businessRegistration: agencyData.business_registration || '',
+            taxId: agencyData.tax_id || '',
+            establishedDate: agencyData.established_date || agencyData.created_at?.split('T')[0] || '',
+            operatingHours: agencyData.operating_hours || {
+              monday: { open: '08:00', close: '18:00', closed: false },
+              tuesday: { open: '08:00', close: '18:00', closed: false },
+              wednesday: { open: '08:00', close: '18:00', closed: false },
+              thursday: { open: '08:00', close: '18:00', closed: false },
+              friday: { open: '08:00', close: '18:00', closed: false },
+              saturday: { open: '09:00', close: '17:00', closed: false },
+              sunday: { open: '10:00', close: '16:00', closed: false }
+            }
+          };
+
+          setProfileData(mappedData);
+          setEditData(mappedData);
+        } else {
+          console.error('Failed to fetch agency profile:', response.statusText);
+          // Fallback to user data from localStorage
+          if (user.name) {
+            setProfileData(prev => ({
+              ...prev,
+              name: user.name,
+              email: user.email,
+              contactPerson: user.name
+            }));
+            setEditData(prev => ({
+              ...prev,
+              name: user.name,
+              email: user.email,
+              contactPerson: user.name
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching agency profile:', error);
+        // Fallback to user data from localStorage
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (user.name) {
+          setProfileData(prev => ({
+            ...prev,
+            name: user.name,
+            email: user.email,
+            contactPerson: user.name
+          }));
+          setEditData(prev => ({
+            ...prev,
+            name: user.name,
+            email: user.email,
+            contactPerson: user.name
+          }));
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAgencyProfile();
+  }, []);
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setProfileData(editData);
-      setIsEditing(false);
-      alert('Profile updated successfully!');
+      const token = localStorage.getItem('access_token');
+
+      if (!token) {
+        console.error('No access token found');
+        alert('Please log in again.');
+        return;
+      }
+
+      // Map frontend data to backend format
+      const backendData = {
+        name: editData.name,
+        email: editData.email,
+        phone: editData.phone,
+        address: editData.address,
+        city: editData.city,
+        state: editData.state,
+        country: editData.country,
+        postal_code: editData.postalCode,
+        website: editData.website,
+        description: editData.description,
+        contact_person: editData.contactPerson,
+        business_registration: editData.businessRegistration,
+        tax_id: editData.taxId,
+        established_date: editData.establishedDate,
+        operating_hours: editData.operatingHours
+      };
+
+      const response = await fetch('http://localhost:3001/api/v1/agencies/profile', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(backendData)
+      });
+
+      if (response.ok) {
+        setProfileData(editData);
+        setIsEditing(false);
+
+        // Update user data in localStorage if name or email changed
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (user.name !== editData.contactPerson || user.email !== editData.email) {
+          const updatedUser = {
+            ...user,
+            name: editData.contactPerson,
+            email: editData.email
+          };
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        }
+
+        alert('Profile updated successfully!');
+      } else {
+        console.error('Failed to save agency profile:', response.statusText);
+        alert('Failed to save profile. Please try again.');
+      }
     } catch (error) {
-      alert('Failed to update profile. Please try again.');
+      console.error('Error saving agency profile:', error);
+      alert('Error saving profile. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -101,6 +252,17 @@ export const AgencyProfile: React.FC = () => {
   };
 
   const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-2 text-gray-600">Loading profile...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">

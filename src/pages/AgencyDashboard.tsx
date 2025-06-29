@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Car, Calendar, Users, DollarSign, TrendingUp, Plus,
   BarChart3, Settings, Bell, User, LogOut, ChevronDown,
@@ -12,14 +13,22 @@ import { ReservationsManagement } from '../components/ReservationsManagement';
 import { CarAvailabilityCalendar } from '../components/CarAvailabilityCalendar';
 
 export const AgencyDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(3);
+  const [user, setUser] = useState<any>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
+  // Load user data and close dropdown when clicking outside
   useEffect(() => {
+    // Load user data from localStorage
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsProfileDropdownOpen(false);
@@ -31,6 +40,16 @@ export const AgencyDashboard: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  const handleLogout = () => {
+    // Clear all stored data
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
+
+    // Redirect to login page
+    navigate('/login');
+  };
 
   const stats = [
     { label: 'Total Vehicles', value: '24', icon: Car, color: 'bg-blue-500' },
@@ -136,7 +155,7 @@ export const AgencyDashboard: React.FC = () => {
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">Toyota Camry</p>
-                    <p className="text-sm text-gray-600">John Doe • 3 days</p>
+                    <p className="text-sm text-gray-600">Sample Client • 3 days</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -251,12 +270,6 @@ export const AgencyDashboard: React.FC = () => {
               <h1 className="text-2xl font-bold text-gray-900">
                 {navigationItems.flatMap(section => section.items).find(item => item.id === activeSection)?.label || 'Dashboard'}
               </h1>
-              {activeSection === 'dashboard' && (
-                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Vehicle
-                </button>
-              )}
             </div>
 
             {/* Top Right Actions */}
@@ -278,9 +291,11 @@ export const AgencyDashboard: React.FC = () => {
                   className="flex items-center space-x-2 p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200"
                 >
                   <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                    <span className="text-white font-medium text-sm">JD</span>
+                    <span className="text-white font-medium text-sm">
+                      {user?.name ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase() : 'U'}
+                    </span>
                   </div>
-                  <span className="font-medium">John Doe</span>
+                  <span className="font-medium">{user?.name || 'User'}</span>
                   <ChevronDown className="h-4 w-4" />
                 </button>
 
@@ -298,7 +313,10 @@ export const AgencyDashboard: React.FC = () => {
                       My Profile
                     </button>
                     <hr className="my-1" />
-                    <button className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center"
+                    >
                       <LogOut className="h-4 w-4 mr-2" />
                       Logout
                     </button>

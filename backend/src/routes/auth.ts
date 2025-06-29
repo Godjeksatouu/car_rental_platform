@@ -174,8 +174,9 @@ router.post('/register/agency', validateRequest(registerAgencySchema), logActivi
     const passwordHash = await passwordUtils.hash(password);
 
     // Create agency
+    const agencyId = uuidv4();
     const agencyData = {
-      id: uuidv4(),
+      id: agencyId,
       name,
       slug,
       email,
@@ -196,10 +197,14 @@ router.post('/register/agency', validateRequest(registerAgencySchema), logActivi
 
     const agency = await dbUtils.insert('agencies', agencyData);
 
+    if (!agency) {
+      throw new Error('Failed to create agency record');
+    }
+
     // Create default agency settings
     const settingsData = {
       id: uuidv4(),
-      agency_id: agency.id,
+      agency_id: agencyId,
       primary_color: '#3B82F6',
       secondary_color: '#1F2937',
       font_family: 'Inter',
@@ -222,7 +227,7 @@ router.post('/register/agency', validateRequest(registerAgencySchema), logActivi
     for (const category of defaultCategories) {
       await dbUtils.insert('car_categories', {
         id: uuidv4(),
-        agency_id: agency.id,
+        agency_id: agencyId,
         name: category.name,
         description: category.description,
         created_at: new Date()
@@ -231,10 +236,10 @@ router.post('/register/agency', validateRequest(registerAgencySchema), logActivi
 
     // Generate tokens
     const tokenPayload = {
-      id: agency.id,
+      id: agencyId,
       email: agency.email,
       user_type: 'agency',
-      agency_id: agency.id
+      agency_id: agencyId
     };
 
     const accessToken = jwtUtils.generateAccessToken(tokenPayload);
@@ -254,10 +259,29 @@ router.post('/register/agency', validateRequest(registerAgencySchema), logActivi
 
   } catch (error) {
     console.error('Agency registration error:', error);
+
+    // Provide more specific error messages
+    let errorMessage = 'Registration failed';
+    let errorCode = 'REGISTRATION_ERROR';
+
+    if (error instanceof Error) {
+      if (error.message.includes('ER_NO_SUCH_TABLE')) {
+        errorMessage = 'Database not set up. Please run the database schema first.';
+        errorCode = 'DATABASE_NOT_SETUP';
+      } else if (error.message.includes('ER_BAD_DB_ERROR')) {
+        errorMessage = 'Database does not exist. Please create the database first.';
+        errorCode = 'DATABASE_NOT_EXISTS';
+      } else if (error.message.includes('ECONNREFUSED')) {
+        errorMessage = 'Cannot connect to database. Please check if MySQL is running.';
+        errorCode = 'DATABASE_CONNECTION_ERROR';
+      }
+    }
+
     res.status(500).json({
       error: {
-        message: 'Registration failed',
-        code: 'REGISTRATION_ERROR'
+        message: errorMessage,
+        code: errorCode,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
       }
     });
   }

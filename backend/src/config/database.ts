@@ -140,6 +140,11 @@ export const dbUtils = {
 
   // Insert record
   insert: async (table: string, data: Record<string, any>): Promise<any> => {
+    // Generate UUID if not provided
+    if (!data.id) {
+      data.id = require('uuid').v4();
+    }
+
     const columns = Object.keys(data).join(', ');
     const placeholders = Object.keys(data).map(() => '?').join(', ');
     const values = Object.values(data);
@@ -149,11 +154,18 @@ export const dbUtils = {
       values
     );
 
-    // Get the inserted record by ID
+    // For UUID primary keys, return the record using the provided/generated ID
+    if (data.id) {
+      const insertedRecord = await dbUtils.findOne(table, { id: data.id });
+      return insertedRecord;
+    }
+
+    // Fallback for auto-increment IDs
     if (result.rows && (result.rows as any).insertId) {
       const insertedRecord = await dbUtils.findOne(table, { id: (result.rows as any).insertId });
       return insertedRecord;
     }
+
     return null;
   },
 

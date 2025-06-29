@@ -87,17 +87,61 @@ export const OnboardingFlow: React.FC = () => {
   const handleComplete = async () => {
     setIsSubmitting(true);
     try {
-      // Here you would typically send the data to your backend
       console.log('Submitting agency data:', formData);
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Generate slug from agency name
+      const slug = formData.agencyName.toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/-+/g, '-') // Replace multiple hyphens with single
+        .trim();
 
-      // Navigate to dashboard
-      navigate('/dashboard');
+      // Prepare data for backend API
+      const registrationData = {
+        name: formData.agencyName,
+        slug: slug,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        address: formData.address,
+        city: '', // You might want to add city field to the form
+        state: '', // You might want to add state field to the form
+        country: '', // You might want to add country field to the form
+        postal_code: '' // You might want to add postal code field to the form
+      };
+
+      // Call the backend registration API
+      const response = await fetch('http://localhost:3001/api/v1/auth/register/agency', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(registrationData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Registration successful
+        console.log('Agency registered successfully:', data);
+
+        // Store tokens and user data
+        if (data.access_token) {
+          localStorage.setItem('access_token', data.access_token);
+          localStorage.setItem('refresh_token', data.refresh_token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
+
+        // Navigate to dashboard
+        navigate('/dashboard');
+      } else {
+        // Registration failed
+        console.error('Registration failed:', data);
+        alert(data.error?.message || 'Failed to create agency. Please try again.');
+      }
     } catch (error) {
       console.error('Error creating agency:', error);
-      alert('Failed to create agency. Please try again.');
+      alert('Network error. Please check if the backend server is running and try again.');
     } finally {
       setIsSubmitting(false);
     }
